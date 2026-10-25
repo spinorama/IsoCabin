@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Courtyard 01 — Unfolding Isometric Cabin</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --paper-grid: rgba(28, 35, 43, 0.06);
+      --ink: #181e24;
+      --ink-muted: #5a6570;
+      --ink-faint: rgba(24, 30, 36, 0.22);
+      --accent: #c84b31;
+      --accent-soft: rgba(200, 75, 49, 0.14);
+      --face-fill: #f4f1ea;
+      --face-shade: #ebe6dc;
+      --courtyard-fill: #e5dfd3;
+      --glass-fill: rgba(165, 195, 210, 0.18);
+      --panel-bg: rgba(244, 241, 234, 0.88);
+      --border: rgba(24, 30, 36, 0.18);
+    }
+
+    [data-theme="blueprint"] {
+      --bg: #0f1923;
+      --paper-grid: rgba(140, 195, 255, 0.07);
+      --ink: #e2f0ff;
+      --ink-muted: #7da0c4;
+      --ink-faint: rgba(226, 240, 255, 0.22);
+      --accent: #ff7a45;
+      --accent-soft: rgba(255, 122, 69, 0.18);
+      --face-fill: #0f1923;
+      --face-shade: #152230;
+      --courtyard-fill: #182838;
+      --glass-fill: rgba(100, 180, 255, 0.12);
+      --panel-bg: rgba(15, 25, 35, 0.88);
+      --border: rgba(226, 240, 255, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg);
+      color: var(--ink);
+      font-family: "SF Mono", "JetBrains Mono", "Roboto Mono", "Courier New", monospace;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* Architectural Drafting Grid Background */
+    body {
+      background-image:
+        linear-gradient(to right, var(--paper-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--paper-grid) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      cursor: grab;
+    }
+
+    #canvas-container:active {
+      cursor: grabbing;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Title Block (Top Left) */
+    .title-block {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      max-width: 320px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .title-block .dwg-code {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .title-block h1 {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .title-block .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 12px;
+      font-size: 10px;
+      color: var(--ink-muted);
+      border-top: 1px solid var(--border);
+      padding-top: 6px;
+    }
+
+    .title-block .meta-grid span strong {
+      color: var(--ink);
+    }
+
+    /* Top Right Quick Toggles */
+    .top-actions {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 6px;
+      z-index: 10;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      max-width: 240px;
+    }
+
+    .btn {
+      background: var(--panel-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      padding: 7px 11px;
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      border-color: var(--ink);
+    }
+
+    .btn.active {
+      background: var(--ink);
+      color: var(--bg);
+      border-color: var(--ink);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+
+    .btn-accent:hover {
+      opacity: 0.92;
+      border-color: var(--accent);
+    }
+
+    /* Bottom Control Dock */
+    .control-dock {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(640px, calc(100vw - 32px));
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slider-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      min-width: 98px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .slider-label strong {
+      color: var(--accent);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 3px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border: 2px solid var(--bg);
+      cursor: pointer;
+    }
+
+    .preset-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .preset-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .hint-text {
+      font-size: 10px;
+      color: var(--ink-muted);
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 600px) {
+      .title-block {
+        padding: 8px 12px;
+        max-width: 210px;
+      }
+      .title-block h1 {
+        font-size: 12px;
+      }
+      .hint-text {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Architectural Title Block -->
+  <div class="title-block">
+    <div class="dwg-code">DWG NO. CY-01 // ISO-AXON</div>
+    <h1>Courtyard 01 — Unfolding Cabin</h1>
+    <div class="meta-grid">
+      <span>SCALE: <strong>1:50</strong></span>
+      <span>STATE: <strong id="state-readout">CLOSED</strong></span>
+      <span>FOLD: <strong id="fold-readout">0%</strong></span>
+      <span>AZIMUTH: <strong id="angle-readout">45°</strong></span>
+    </div>
+  </div>
+
+  <!-- Top Right View Toggles -->
+  <div class="top-actions">
+    <button class="btn active" id="btn-arcs" title="Toggle Swing Arcs">Arcs</button>
+    <button class="btn active" id="btn-dims" title="Toggle Dimensions & Callouts">Dims</button>
+    <button class="btn" id="btn-xray" title="Toggle Wireframe X-Ray">X-Ray</button>
+    <button class="btn" id="btn-theme" title="Switch Ink / Blueprint">Blueprint</button>
+  </div>
+
+  <!-- Interactive Canvas -->
+  <div id="canvas-container">
+    <canvas id="iso-canvas"></canvas>
+  </div>
+
+  <!-- Bottom Control Bar -->
+  <div class="control-dock">
+    <div class="slider-row">
+      <div class="slider-label">
+        <span>UNFOLD</span>
+        <strong id="slider-val">0%</strong>
+      </div>
+      <input type="range" id="fold-slider" min="0" max="1000" value="0" />
+      <button class="btn btn-accent" id="btn-toggle-fold">Unfold</button>
+    </div>
+
+    <div class="preset-row">
+      <div class="preset-group">
+        <button class="btn" data-preset="0">0% Closed</button>
+        <button class="btn" data-preset="350">35% Roofs Open</button>
+        <button class="btn" data-preset="700">70% Kinetic</button>
+        <button class="btn" data-preset="1000">100% Flat Net</button>
+      </div>
+      <span class="hint-text">DRAG TO ORBIT · SCROLL/PINCH TO ZOOM</span>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById('iso-canvas');
+      const ctx = canvas.getContext('2d');
+
+      // UI Elements
+      const foldSlider = document.getElementById('fold-slider');
+      const sliderVal = document.getElementById('slider-val');
+      const foldReadout = document.getElementById('fold-readout');
+      const stateReadout = document.getElementById('state-readout');
+      const angleReadout = document.getElementById('angle-readout');
+      const btnToggleFold = document.getElementById('btn-toggle-fold');
+      const btnArcs = document.getElementById('btn-arcs');
+      const btnDims = document.getElementById('btn-dims');
+      const btnXray = document.getElementById('btn-xray');
+      const btnTheme = document.getElementById('btn-theme');
+
+      // Application State
+      const state = {
+        fold: 0,           // 0.0 (folded cabin) to 1.0 (unfolded flat net)
+        targetFold: 0,
+        animating: false,
+        yaw: Math.PI / 4,  // 45 deg true isometric default
+        pitch: Math.atan(1 / Math.sqrt(2)), // ~35.264 deg true isometric
+        zoom: 1.0,
+        panX: 0,
+        panY: 15,
+        showArcs: true,
+        showDims: true,
+        xray: false,
+        blueprint: false
+      };
+
+      // Responsive Canvas Sizing
+      let width = 0, height = 0, dpr = 1;
+      function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      // 3D Vector & Kinematics Math Utilities
+      const v3 = (x, y, z) => ({ x, y, z });
+      const add = (a, b) => ({ x: a.x + b.x, y: a.y + b.y, z: a.z + b.z });
+      const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z });
+      const scale = (a, s) => ({ x: a.x * s, y: a.y * s, z: a.z * s });
+      const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+      const cross = (a, b) => ({
+        x: a.y * b.z - a.z * b.y,
+        y: a.z * b.x - a.x * b.z,
+        z: a.x * b.y - a.y * b.x
+      });
+      const norm = (a) => {
+        const len = Math.hypot(a.x, a.y, a.z) || 1;
+        return { x: a.x / len, y: a.y / len, z: a.z / len };
+      };
+      const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+      const smoothstep = (e0, e1, x) => {
+        const t = clamp((x - e0) / (e1 - e0), 0, 1);
+        return t * t * (3 - 2 * t);
+      };
+
+      // Rodrigues' rotation formula: rotate point P around an arbitrary hinge line (origin, unit axis) by angle rad
+      function rotateAroundHinge(p, origin, axis, angle) {
+        if (Math.abs(angle) < 1e-5) return { ...p };
+        const u = norm(axis);
+        const v = sub(p, origin);
+        const cosA = Math.cos(angle);
+        const sinA = Math.sin(angle);
+        const crossUV = cross(u, v);
+        const dotUV = dot(u, v);
+        return {
+          x: origin.x + v.x * cosA + crossUV.x * sinA + u.x * dotUV * (1 - cosA),
+          y: origin.y + v.y * cosA + crossUV.y * sinA + u.y * dotUV * (1 - cosA),
+          z: origin.z + v.z * cosA + crossUV.z * sinA + u.z * dotUV * (1 - cosA)
+        };
+      }
+
+      // Orthographic Isometric Projection
+      function project(p) {
+        const cosY = Math.cos(state.yaw);
+        const sinY = Math.sin(state.yaw);
+        const cosP = Math.cos(state.pitch);
+        const sinP = Math.sin(state.pitch);
+
+        // Rotate around Y (turntable azimuth)
+        const x1 = p.x * cosY - p.z * sinY;
+        const z1 = p.x * sinY + p.z * cosY;
+        const y1 = p.y;
+
+        // Rotate around X (isometric elevation pitch)
+        const y2 = y1 * cosP - z1 * sinP;
+        const z2 = y1 * sinP + z1 * cosP;
+
+        const baseScale = Math.min(width, height) * 0.043 * state.zoom;
+        return {
+          x: width * 0.5 + state.panX + x1 * baseScale,
+          y: height * 0.52 + state.panY - y2 * baseScale,
+          depth: z2
+        };
+      }
+
+      function getThemeColors() {
+        const s = getComputedStyle(document.body);
+        return {
+          ink: s.getPropertyValue('--ink').trim(),
+          muted: s.getPropertyValue('--ink-muted').trim(),
+          faint: s.getPropertyValue('--ink-faint').trim(),
+          accent: s.getPropertyValue('--accent').trim(),
+          accentSoft: s.getPropertyValue('--accent-soft').trim(),
+          faceFill: s.getPropertyValue('--face-fill').trim(),
+          faceShade: s.getPropertyValue('--face-shade').trim(),
+          courtyardFill: s.getPropertyValue('--courtyard-fill').trim(),
+          glassFill: s.getPropertyValue('--glass-fill').trim()
+        };
+      }
+
+      // Build Scene Geometry for Current Fold Parameter t in [0, 1]
+      function buildCabinScene(t) {
+        const faces = [];
+        const lines = [];
+        const arcs = [];
+        const labels = [];
+
+        // Kinematic phasing:
+        // Phase 1: Roofs unfold first (0.0 -> 0.55)
+        // Phase 2: Courtyard glazing & interior partitions fold (0.15 -> 0.70)
+        // Phase 3: Outer perimeter walls hinge flat to ground (0.30 -> 1.0)
+        const tRoof = smoothstep(0.0, 0.55, t);
+        const tInner = smoothstep(0.15, 0.70, t);
+        const tWall = smoothstep(0.28, 1.0, t);
+
+        // Cabin Metrics (in meters, 1 unit = 1m)
+        // Outer footprint: 8m x 8m (-4 to +4)
+        // Inner courtyard: 3.6m x 3.6m (-1.8 to +1.8)
+        const W = 4.0;
+        const C = 1.8;
+        const wallH = 2.6;
+        const roofPeakH = 3.35;
+
+        const addFace = (pts, type = 'default', weight = 1.15) => {
+          faces.push({ pts, type, weight });
+        };
+
+        const addLine = (a, b, style = 'solid', weight = 1.0) => {
+          lines.push({ a, b, style, weight });
+        };
+
+        const addQuadPrism = (x0, y0, z0, x1, y1, z1, type = 'default', transformFn = null) => {
+          const p = [
+            v3(x0, y0, z0), v3(x1, y0, z0), v3(x1, y0, z1), v3(x0, y0, z1),
+            v3(x0, y1, z0), v3(x1, y1, z0), v3(x1, y1, z1), v3(x0, y1, z1)
+          ].map(pt => transformFn ? transformFn(pt) : pt);
+
+          const quads = [
+            [0, 1, 2, 3], [4, 5, 6, 7],
+            [0, 1, 5, 4], [1, 2, 6, 5],
+            [2, 3, 7, 6], [3, 0, 4, 7]
+          ];
+          quads.forEach(q => addFace(q.map(i => p[i]), type, 1.0));
+        };
+
+        // 1. REFERENCE GROUND GRID & PLINTH FOUNDATION
+        for (let g = -5; g <= 5; g += 1) {
+          addLine(v3(g, -0.2, -5), v3(g, -0.2, 5), 'grid', 0.5);
+          addLine(v3(-5, -0.2, g), v3(5, -0.2, g), 'grid', 0.5);
+        }
+
+        // Main Timber/Concrete Plinth Foundation (-4 to 4, height -0.2 to 0)
+        addQuadPrism(-W, -0.2, -W, W, 0, W, 'shade');
+
+        // Central Sunken Courtyard Deck (-1.8 to 1.8)
+        addFace([v3(-C, 0.01, -C), v3(C, 0.01, -C), v3(C, 0.01, C), v3(-C, 0.01, C)], 'courtyard', 1.2);
+
+        // Courtyard Paver Grid & Planter Box
+        for (let s = -C + 0.6; s < C; s += 0.6) {
+          addLine(v3(s, 0.02, -C), v3(s, 0.02, C), 'faint', 0.6);
+          addLine(v3(-C, 0.02, s), v3(C, 0.02, s), 'faint', 0.6);
+        }
+
+        // Courtyard Feature Planter & Architectural Specimen Tree
+        addQuadPrism(-0.55, 0.02, -0.55, 0.55, 0.32, 0.55, 'default');
+        // Minimalist Isometric Wireframe Tree in Courtyard Center
+        const trunkTop = v3(0, 2.0, 0);
+        addLine(v3(0, 0.32, 0), trunkTop, 'solid', 1.4);
+        const branches = [
+          [v3(0, 1.2, 0), v3(0.65, 1.75, 0.4)],
+          [v3(0, 1.35, 0), v3(-0.6, 1.85, 0.35)],
+          [v3(0, 1.5, 0), v3(0.3, 2.1, -0.6)],
+          [v3(0, 1.6, 0), v3(-0.45, 2.2, -0.45)]
+        ];
+        branches.forEach(([b0, b1]) => {
+          addLine(b0, b1, 'solid', 0.9);
+          // Canopy geometric rings
+          const r = 0.38;
+          const ring = [];
+          for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * Math.PI * 2;
+            ring.push(v3(b1.x + Math.cos(a) * r, b1.y + 0.05, b1.z + Math.sin(a) * r));
+          }
+          for (let i = 0; i < 6; i++) {
+            addLine(ring[i], ring[(i + 1) % 6], 'solid', 0.7);
+          }
+        });
+
+        // 2. INTERIOR BUILT-IN FURNITURE (Revealed as cabin unfolds)
+        // North Wing Living Lounge Sofa & Low Table
+        addQuadPrism(-1.4, 0, -3.65, 1.4, 0.42, -2.85, 'default');
+        addQuadPrism(-1.4, 0.42, -3.65, 1.4, 0.82, -3.42, 'shade'); // Sofa backrest
+        addQuadPrism(-0.7, 0, -2.55, 0.7, 0.3, -2.05, 'default');   // Coffee table
+
+        // West Wing Sleeping Platform
+        addQuadPrism(-3.7, 0, -1.2, -2.2, 0.38, 1.2, 'default');
+        addQuadPrism(-3.65, 0.38, -1.0, -3.25, 0.54, 1.0, 'shade');  // Pillows
+
+        // East Wing Studio / Kitchen Counter
+        addQuadPrism(2.85, 0, -1.4, 3.65, 0.88, 1.4, 'shade');
+
+        // Floorboard planks across interior wings
+        for (let f = -W + 0.4; f < W; f += 0.4) {
+          if (Math.abs(f) > C) {
+            addLine(v3(f, 0.01, -W), v3(f, 0.01, W), 'faint', 0.5);
+          }
+        }
+
+        // 3. HINGED INNER COURTYARD GLAZING WALLS (4 sides around C = 1.8)
+        // Fold inward onto the courtyard when unfolding
+        const innerAngle = tInner * (Math.PI * 0.5);
+        const innerSides = [
+          { name: 'N', o: v3(0, 0, -C), axis: v3(1, 0, 0), sign: 1, span: C },
+          { name: 'S', o: v3(0, 0, C),  axis: v3(1, 0, 0), sign: -1, span: C },
+          { name: 'W', o: v3(-C, 0, 0), axis: v3(0, 0, 1), sign: -1, span: C },
+          { name: 'E', o: v3(C, 0, 0),  axis: v3(0, 0, 1), sign: 1, span: C }
+        ];
+
+        innerSides.forEach(side => {
+          const rot = (pt) => rotateAroundHinge(pt, side.o, side.axis, innerAngle * side.sign);
+          const isZ = Math.abs(side.axis.x) > 0.5;
+          const s = side.span;
+          const h = 2.25;
+
+          const p0 = rot(isZ ? v3(-s, 0, side.o.z) : v3(side.o.x, 0, -s));
+          const p1 = rot(isZ ? v3(s, 0, side.o.z)  : v3(side.o.x, 0, s));
+          const p2 = rot(isZ ? v3(s, h, side.o.z)  : v3(side.o.x, h, s));
+          const p3 = rot(isZ ? v3(-s, h, side.o.z) : v3(side.o.x, h, -s));
+
+          addFace([p0, p1, p2, p3], 'glass', 0.9);
+          // Mullions
+          for (let m = -1; m <= 1; m += 1) {
+            const mp0 = rot(isZ ? v3(m * 0.6, 0, side.o.z) : v3(side.o.x, 0, m * 0.6));
+            const mp1 = rot(isZ ? v3(m * 0.6, h, side.o.z) : v3(side.o.x, h, m * 0.6));
+            addLine(mp0, mp1, 'solid', 0.75);
+          }
+        });
+
+        // 4. HINGED OUTER PERIMETER WALLS & ARTICULATED ROOFS
+        const wallAngle = tWall * (Math.PI * 0.5); // 0 to 90 deg outward
+        const roofAngle = tRoof * (Math.PI * 0.42); // Unfolds outward relative to wall top plate
+
+        const wings = [
+          {
+            id: 'NORTH',
+            hingeOrigin: v3(0, 0, -W),
+            hingeAxis: v3(-1, 0, 0), // Outward is -Z
+            roofOrigin: v3(0, wallH, -W),
+            roofAxis: v3(-1, 0, 0),
+            build: (xformWall, xformRoof) => {
+              // Wall slab with thick architectural framing
+              addQuadPrism(-W, 0, -W, W, wallH, -W + 0.16, 'default', xformWall);
+              // Panoramic Clerestory & Window Framing
+              addFace([
+                xformWall(v3(-2.6, 0.75, -W - 0.01)),
+                xformWall(v3(2.6, 0.75, -W - 0.01)),
+                xformWall(v3(2.6, 2.1, -W - 0.01)),
+                xformWall(v3(-2.6, 2.1, -W - 0.01))
+              ], 'glass', 1.0);
+              // Vertical timber cladding ribs
+              for (let x = -3.5; x <= 3.5; x += 0.5) {
+                if (Math.abs(x) > 2.6) {
+                  addLine(xformWall(v3(x, 0, -W - 0.01)), xformWall(v3(x, wallH, -W - 0.01)), 'faint', 0.65);
+                }
+              }
+              // Articulated Pitched Roof Wing (slopes up toward courtyard)
+              const r0 = xformRoof(v3(-W, wallH, -W));
+              const r1 = xformRoof(v3(W, wallH, -W));
+              const r2 = xformRoof(v3(C, roofPeakH, -C));
+              const r3 = xformRoof(v3(-C, roofPeakH, -C));
+              addFace([r0, r1, r2, r3], 'shade', 1.25);
+              // Roof Rafters
+              for (let i = 1; i < 7; i++) {
+                const u = i / 7;
+                const a = v3(-W + u * 2 * W, wallH, -W);
+                const b = v3(-C + u * 2 * C, roofPeakH, -C);
+                addLine(xformRoof(a), xformRoof(b), 'faint', 0.7);
+              }
+              // Swing trajectory arc for North Wall top-right corner
+              arcs.push({
+                origin: v3(W, 0, -W),
+                axis: v3(-1, 0, 0),
+                startPt: v3(W, wallH, -W),
+                angle: wallAngle
+              });
+            }
+          },
+          {
+            id: 'SOUTH',
+            hingeOrigin: v3(0, 0, W),
+            hingeAxis: v3(1, 0, 0), // Outward is +Z
+            roofOrigin: v3(0, wallH, W),
+            roofAxis: v3(1, 0, 0),
+            build: (xformWall, xformRoof) => {
+              // Left & Right South Facade Piers with Central Courtyard Entry Portal
+              addQuadPrism(-W, 0, W - 0.16, -1.2, wallH, W, 'default', xformWall);
+              addQuadPrism(1.2, 0, W - 0.16, W, wallH, W, 'default', xformWall);
+              addQuadPrism(-1.2, 2.05, W - 0.16, 1.2, wallH, W, 'default', xformWall);
+              // Entry Louver Screen details
+              for (let lx = -1.0; lx <= 1.0; lx += 0.25) {
+                addLine(xformWall(v3(lx, 0, W + 0.01)), xformWall(v3(lx, 2.05, W + 0.01)), 'faint', 0.7);
+              }
+              // South Roof Wing
+              const r0 = xformRoof(v3(W, wallH, W));
+              const r1 = xformRoof(v3(-W, wallH, W));
+              const r2 = xformRoof(v3(-C, roofPeakH, C));
+              const r3 = xformRoof(v3(C, roofPeakH, C));
+              addFace([r0, r1, r2, r3], 'default', 1.25);
+              for (let i = 1; i < 7; i++) {
+                const u = i / 7;
+                const a = v3(-W + u * 2 * W, wallH, W);
+                const b = v3(-C + u * 2 * C, roofPeakH, C);
+                addLine(xformRoof(a), xformRoof(b), 'faint', 0.7);
+              }
+              arcs.push({
+                origin: v3(-W, 0, W),
+                axis: v3(1, 0, 0),
+                startPt: v3(-W, wallH, W),
+                angle: wallAngle
+              });
+            }
+          },
+          {
+            id: 'WEST',
+            hingeOrigin: v3(-W, 0, 0),
+            hingeAxis: v3(0, 0, 1), // Outward is -X
+            roofOrigin: v3(-W, wallH, 0),
+            roofAxis: v3(0, 0, 1),
+            build: (xformWall, xformRoof) => {
+              addQuadPrism(-W, 0, -W, -W + 0.16, wallH, W, 'shade', xformWall);
+              // Square architectural window aperture
+              addFace([
+                xformWall(v3(-W - 0.01, 0.9, -1.3)),
+                xformWall(v3(-W - 0.01, 0.9, 1.3)),
+                xformWall(v3(-W - 0.01, 2.05, 1.3)),
+                xformWall(v3(-W - 0.01, 2.05, -1.3))
+              ], 'glass', 1.0);
+              // West Roof Wing
+              const r0 = xformRoof(v3(-W, wallH, W));
+              const r1 = xformRoof(v3(-W, wallH, -W));
+              const r2 = xformRoof(v3(-C, roofPeakH, -C));
+              const r3 = xformRoof(v3(-C, roofPeakH, C));
+              addFace([r0, r1, r2, r3], 'shade', 1.25);
+              for (let i = 1; i < 7; i++) {
+                const u = i / 7;
+                const a = v3(-W, wallH, -W + u * 2 * W);
+                const b = v3(-C, roofPeakH, -C + u * 2 * C);
+                addLine(xformRoof(a), xformRoof(b), 'faint', 0.7);
+              }
+              arcs.push({
+                origin: v3(-W, 0, -W),
+                axis: v3(0, 0, 1),
+                startPt: v3(-W, wallH, -W),
+                angle: wallAngle
+              });
+            }
+          },
+          {
+            id: 'EAST',
+            hingeOrigin: v3(W, 0, 0),
+            hingeAxis: v3(0, 0, -1), // Outward is +X
+            roofOrigin: v3(W, wallH, 0),
+            roofAxis: v3(0, 0, -1),
+            build: (xformWall, xformRoof) => {
+              addQuadPrism(W - 0.16, 0, -W, W, wallH, W, 'default', xformWall);
+              // Horizontal ribbon window
+              addFace([
+                xformWall(v3(W + 0.01, 1.15, -2.2)),
+                xformWall(v3(W + 0.01, 1.15, 2.2)),
+                xformWall(v3(W + 0.01, 1.95, 2.2)),
+                xformWall(v3(W + 0.01, 1.95, -2.2))
+              ], 'glass', 1.0);
+              // East Roof Wing
+              const r0 = xformRoof(v3(W, wallH, -W));
+              const r1 = xformRoof(v3(W, wallH, W));
+              const r2 = xformRoof(v3(C, roofPeakH, C));
+              const r3 = xformRoof(v3(C, roofPeakH, -C));
+              addFace([r0, r1, r2, r3], 'default', 1.25);
+              for (let i = 1; i < 7; i++) {
+                const u = i / 7;
+                const a = v3(W, wallH, -W + u * 2 * W);
+                const b = v3(C, roofPeakH, -C + u * 2 * C);
+                addLine(xformRoof(a), xformRoof(b), 'faint', 0.7);
+              }
+              arcs.push({
+                origin: v3(W, 0, W),
+                axis: v3(0, 0, -1),
+                startPt: v3(W, wallH, W),
+                angle: wallAngle
+              });
+            }
+          }
+        ];
+
+        // Execute compound kinematic transformations for each wing
+        wings.forEach(w => {
+          const xformWall = (pt) => rotateAroundHinge(pt, w.hingeOrigin, w.hingeAxis, wallAngle);
+          // Compound transform: roof first unfolds around eave hinge, then rides on the hinging wall
+          const xformRoof = (pt) => {
+            const p1 = rotateAroundHinge(pt, w.roofOrigin, w.roofAxis, roofAngle);
+            return rotateAroundHinge(p1, w.hingeOrigin, w.hingeAxis, wallAngle);
+          };
+          w.build(xformWall, xformRoof);
+        });
+
+        // 5. ARCHITECTURAL DIMENSIONS & LEADER CALLOUTS
+        if (state.showDims) {
+          // Footprint 8,000 mm dimension line along South-East ground edge
+          const dZ = W + 0.85 + tWall * 2.6;
+          addLine(v3(-W, -0.2, W), v3(-W, -0.2, dZ + 0.2), 'faint', 0.75);
+          addLine(v3(W, -0.2, W), v3(W, -0.2, dZ + 0.2), 'faint', 0.75);
+          addLine(v3(-W, -0.2, dZ), v3(W, -0.2, dZ), 'accent', 1.0);
+          labels.push({
+            pos: v3(0, -0.2, dZ + 0.35),
+            text: '8,000 mm',
+            kind: 'dim'
+          });
+
+          // Courtyard 3,600 mm internal span callout
+          labels.push({
+            pos: v3(0, 0.25, 0),
+            text: '01 ATRIUM COURTYARD (3.6m × 3.6m)',
+            kind: 'callout'
+          });
+
+          // Dynamic North Wall Hinge Callout
+          const northTip = rotateAroundHinge(v3(0, wallH, -W), v3(0, 0, -W), v3(-1, 0, 0), wallAngle);
+          labels.push({
+            pos: add(northTip, v3(0, 0.45, 0)),
+            text: `02 HINGED WALL (θ = ${Math.round((wallAngle * 180) / Math.PI)}°)`,
+            kind: 'callout'
+          });
+
+          // Dynamic East Roof Wing Callout
+          const eastRoofPt = (() => {
+            const p1 = rotateAroundHinge(v3(C, roofPeakH, 0), v3(W, wallH, 0), v3(0, 0, -1), roofAngle);
+            return rotateAroundHinge(p1, v3(W, 0, 0), v3(0, 0, -1), wallAngle);
+          })();
+          labels.push({
+            pos: add(eastRoofPt, v3(0.4, 0.45, 0)),
+            text: '03 BUTTERFLY TIMBER ROOF',
+            kind: 'callout'
+          });
+        }
+
+        return { faces, lines, arcs, labels };
+      }
+
+      // Main Render Loop
+      function render() {
+        // Smooth damping if animating or scrubbing
+        if (Math.abs(state.targetFold - state.fold) > 0.0005) {
+          state.fold += (state.targetFold - state.fold) * 0.12;
+          syncUI();
+        } else {
+          state.fold = state.targetFold;
+        }
+
+        const colors = getThemeColors();
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, width, height);
+
+        const scene = buildCabinScene(state.fold);
+
+        // Project & Depth-Sort Faces (Painter's Algorithm for clean Hidden-Line CAD)
+        const projectedFaces = scene.faces.map(f => {
+          const pts2d = f.pts.map(project);
+          const avgDepth = pts2d.reduce((acc, p) => acc + p.depth, 0) / pts2d.length;
+          return { ...f, pts2d, depth: avgDepth };
+        });
+
+        projectedFaces.sort((a, b) => a.depth - b.depth);
+
+        // Draw Faces
+        projectedFaces.forEach(f => {
+          ctx.beginPath();
+          f.pts2d.forEach((p, idx) => {
+            if (idx === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+          });
+          ctx.closePath();
+
+          if (!state.xray) {
+            if (f.type === 'shade') ctx.fillStyle = colors.faceShade;
+            else if (f.type === 'courtyard') ctx.fillStyle = colors.courtyardFill;
+            else if (f.type === 'glass') ctx.fillStyle = colors.glassFill;
+            else ctx.fillStyle = colors.faceFill;
+            ctx.fill();
+          }
+
+          ctx.strokeStyle = state.xray ? colors.muted : colors.ink;
+          ctx.lineWidth = f.weight;
+          ctx.lineJoin = 'round';
+          ctx.stroke();
+        });
+
+        // Draw Architectural Lines (Rafters, Mullions, Grid, Furniture Details)
+        scene.lines.forEach(l => {
+          const p0 = project(l.a);
+          const p1 = project(l.b);
+          ctx.beginPath();
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p1.x, p1.y);
+
+          if (l.style === 'grid') {
+            ctx.strokeStyle = colors.faint;
+            ctx.setLineDash([]);
+          } else if (l.style === 'faint') {
+            ctx.strokeStyle = colors.muted;
+            ctx.setLineDash([]);
+          } else if (l.style === 'accent') {
+            ctx.strokeStyle = colors.accent;
+            ctx.setLineDash([]);
+          } else {
+            ctx.strokeStyle = colors.ink;
+            ctx.setLineDash([]);
+          }
+          ctx.lineWidth = l.weight;
+          ctx.stroke();
+        });
+
+        // Draw Dashed Rotational Swing Arcs
+        if (state.showArcs && state.fold > 0.01) {
+          ctx.save();
+          ctx.strokeStyle = colors.accent;
+          ctx.lineWidth = 1.1;
+          ctx.setLineDash([4, 4]);
+
+          scene.arcs.forEach(arc => {
+            const steps = 18;
+            ctx.beginPath();
+            for (let i = 0; i <= steps; i++) {
+              const a = (i / steps) * arc.angle;
+              const pt3d = rotateAroundHinge(arc.startPt, arc.origin, arc.axis, a);
+              const pt2d = project(pt3d);
+              if (i === 0) ctx.moveTo(pt2d.x, pt2d.y);
+              else ctx.lineTo(pt2d.x, pt2d.y);
+            }
+            ctx.stroke();
+
+            // Ghost starting corner dot
+            const start2d = project(arc.startPt);
+            ctx.fillStyle = colors.accent;
+            ctx.beginPath();
+            ctx.arc(start2d.x, start2d.y, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          ctx.restore();
+        }
+
+        // Draw Labels & Dimension Callouts
+        if (state.showDims) {
+          ctx.font = '600 10px "SF Mono", "JetBrains Mono", monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          scene.labels.forEach(lbl => {
+            const p = project(lbl.pos);
+            const padX = 6, padY = 4;
+            const metrics = ctx.measureText(lbl.text);
+            const w = metrics.width + padX * 2;
+            const h = 18;
+
+            ctx.fillStyle = colors.faceFill;
+            ctx.strokeStyle = lbl.kind === 'dim' ? colors.accent : colors.ink;
+            ctx.lineWidth = 0.9;
+            ctx.fillRect(p.x - w / 2, p.y - h / 2, w, h);
+            ctx.strokeRect(p.x - w / 2, p.y - h / 2, w, h);
+
+            ctx.fillStyle = lbl.kind === 'dim' ? colors.accent : colors.ink;
+            ctx.fillText(lbl.text, p.x, p.y + 0.5);
+          });
+        }
+
+        // Draw Isometric Compass / North Arrow in Bottom Left
+        drawNorthCompass(colors);
+
+        ctx.restore();
+        requestAnimationFrame(render);
+      }
+
+      function drawNorthCompass(colors) {
+        const cx = 46;
+        const cy = height - 115;
+        const r = 18;
+        const nDir = project(v3(0, 0, -1));
+        const oDir = project(v3(0, 0, 0));
+        const ang = Math.atan2(nDir.y - oDir.y, nDir.x - oDir.x);
+
+        ctx.save();
+        ctx.strokeStyle = colors.ink;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r);
+        ctx.strokeStyle = colors.accent;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = colors.ink;
+        ctx.font = '700 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('N', cx + Math.cos(ang) * (r + 9), cy + Math.sin(ang) * (r + 9) + 3);
+        ctx.restore();
+      }
+
+      // Sync UI Readouts
+      function syncUI() {
+        const pct = Math.round(state.fold * 100);
+        foldSlider.value = Math.round(state.fold * 1000);
+        sliderVal.textContent = `${pct}%`;
+        foldReadout.textContent = `${pct}%`;
+
+        if (pct <= 2) {
+          stateReadout.textContent = 'CLOSED';
+          btnToggleFold.textContent = 'Unfold';
+        } else if (pct >= 98) {
+          stateReadout.textContent = 'FLAT NET';
+          btnToggleFold.textContent = 'Fold Cabin';
+        } else {
+          stateReadout.textContent = 'KINETIC';
+          btnToggleFold.textContent = state.targetFold > 0.5 ? 'Fold Cabin' : 'Unfold';
+        }
+
+        const deg = Math.round(((state.yaw % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) * (180 / Math.PI));
+        angleReadout.textContent = `${deg}°`;
+      }
+
+      // UI Event Listeners
+      foldSlider.addEventListener('input', (e) => {
+        state.targetFold = parseFloat(e.target.value) / 1000;
+        state.fold = state.targetFold;
+        syncUI();
+      });
+
+      btnToggleFold.addEventListener('click', () => {
+        state.targetFold = state.targetFold > 0.5 ? 0 : 1;
+      });
+
+      document.querySelectorAll('[data-preset]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.targetFold = parseFloat(btn.getAttribute('data-preset')) / 1000;
+        });
+      });
+
+      btnArcs.addEventListener('click', () => {
+        state.showArcs = !state.showArcs;
+        btnArcs.classList.toggle('active', state.showArcs);
+      });
+
+      btnDims.addEventListener('click', () => {
+        state.showDims = !state.showDims;
+        btnDims.classList.toggle('active', state.showDims);
+      });
+
+      btnXray.addEventListener('click', () => {
+        state.xray = !state.xray;
+        btnXray.classList.toggle('active', state.xray);
+      });
+
+      btnTheme.addEventListener('click', () => {
+        state.blueprint = !state.blueprint;
+        document.body.setAttribute('data-theme', state.blueprint ? 'blueprint' : '');
+        btnTheme.classList.toggle('active', state.blueprint);
+      });
+
+      // Pointer Orbit & Zoom Controls (Mouse + Touch)
+      let isDragging = false;
+      let lastX = 0, lastY = 0;
+
+      canvas.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        canvas.setPointerCapture(e.pointerId);
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        state.yaw -= dx * 0.007;
+        state.pitch = clamp(state.pitch + dy * 0.005, 0.2, 1.35);
+        syncUI();
+      });
+
+      canvas.addEventListener('pointerup', (e) => {
+        isDragging = false;
+        canvas.releasePointerCapture(e.pointerId);
+      });
+
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY > 0 ? 0.92 : 1.08;
+        state.zoom = clamp(state.zoom * factor, 0.55, 2.4);
+      }, { passive: false });
+
+      syncUI();
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>
