@@ -1,1 +1,1 @@
-https://GitHub.spinorama.io/IsoCabin
+https://spinorama.github.io/IsoCabin
